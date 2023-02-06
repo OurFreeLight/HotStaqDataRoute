@@ -11,7 +11,12 @@ export class DataRoute extends HotRoute
 	 */
 	db: HotDBMySQL;
 
-	constructor (api: HotAPI)
+	/**
+	 * @param api The API to attach this route to.
+	 * @param onStartQueries The queries to execute when registering this route. This 
+	 * would be executing any create if not exists tables, initial inserts, etc.
+	 */
+	constructor (api: HotAPI, onRegisteringRoute: ((db: HotDBMySQL) => Promise<void>) = null)
 	{
 		super (api.connection, "data");
 
@@ -24,18 +29,8 @@ export class DataRoute extends HotRoute
 					if (this.db.connectionStatus !== ConnectionStatus.Connected)
 						return (true);
 
-					// Create and sync any tables here. The following is simply an example:
-					await this.db.query (
-						`create table if not exists users (
-								id             BINARY(36)     NOT NULL DEFAULT UUID(),
-								name           VARCHAR(256)   DEFAULT '',
-								email          VARCHAR(256)   DEFAULT '',
-								password       VARCHAR(256)   DEFAULT '',
-								verified       INT(1)         DEFAULT '0',
-								registered     DATETIME       DEFAULT NOW(),
-								enabled        INT(1)         DEFAULT '1',
-								PRIMARY KEY (id)
-							)`);
+					if (onRegisteringRoute != null)
+						await onRegisteringRoute (this.db);
 				}
 
 				return (true);

@@ -1,5 +1,6 @@
 version: "3.8"
 services:
+  # Used just to make sure the database has started before continuing.
   init-app-database:
     image: mariadb:10.10
     depends_on:
