@@ -1,7 +1,7 @@
 {
   "name": "@hotstaq/dataroute",
   "description": "A generic data route for HotStaq. Mostly handles database queries.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "build/src/index.js",
   "scripts": {
     "test": "hotstaq --dev --env-file .env run --server-type api --api-test",
@@ -14,7 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "dotenv": "^10.0.0",
-    "hotstaq": "^0.8.0"
+    "hotstaq": "^0.8.11"
   },
   "devDependencies": {
     "@types/express": "^4.17.13",

@@ -1,5 +1,5 @@
 {
-	"name": "data-route",
+	"name": "@hotstaq/dataroute",
 	"server": {
 		"globalApi": "AppAPI",
 		"serveDirectories": [
