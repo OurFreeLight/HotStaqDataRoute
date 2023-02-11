@@ -72,6 +72,90 @@ export class DataRoute extends HotRoute
 			]
 		});
 		this.addMethod ({
+			"name": "edit",
+			"onServerExecute": this.edit,
+			"parameters": {
+				"schema": {
+					"type": "string",
+					"required": true,
+					"description": "The schema to edit data in."
+				},
+				"whereFields": {
+					"type": "string",
+					"required": true,
+					"description": 
+						`The where fields and their values to select from the database. A key/value object must be passed. Example: { "name": "Test_User" }`
+				},
+				"fields": {
+					"type": "string",
+					"required": true,
+					"description": 
+						`The fields and their values to update in the database. A key/value object must be passed. Example: { "name": "Test_User" }`
+				}
+			},
+			"description": "Update the results in the database.",
+			"returns": "Returns true if successful.",
+			"testCases": [
+				"editTest",
+				async (driver: HotTestDriver): Promise<any> =>
+				{
+					// @ts-ignore
+					let resp = await api.data.edit ({
+							"schema": "users",
+							"whereFields": {
+								"name": "Test_User"
+							},
+							"fields": {
+								"name": "Test_User_Updated",
+								"email": "test_updated@test.com"
+							}
+						});
+
+					driver.assert (resp === true, "Unable to edit item!");
+				}
+			]
+		});
+		this.addMethod ({
+			"name": "remove",
+			"onServerExecute": this.remove,
+			"parameters": {
+				"schema": {
+					"type": "string",
+					"required": true,
+					"description": "The schema to remove data from."
+				},
+				"whereFields": {
+					"type": "string",
+					"required": true,
+					"description": 
+						`The where fields and their values to select from the database. A key/value object must be passed. Example: { "name": "Test_User" }`
+				},
+				"limit": {
+					"type": "int",
+					"required": false,
+					"description": "The max number of results to delete."
+				}
+			},
+			"description": "Remove results from the database.",
+			"returns": "Returns true if successful.",
+			"testCases": [
+				"removeTest",
+				async (driver: HotTestDriver): Promise<any> =>
+				{
+					// @ts-ignore
+					let resp = await api.data.remove ({
+							"schema": "users",
+							"whereFields": {
+								"name": "Test_User_Updated"
+							}
+						});
+
+					driver.assert (resp === true, "Unable to remove item!");
+					driver.persistentData.hasRemoved = true;
+				}
+			]
+		});
+		this.addMethod ({
 			"name": "list",
 			"onServerExecute": this.list,
 			"parameters": {
@@ -79,6 +163,12 @@ export class DataRoute extends HotRoute
 					"type": "string",
 					"required": true,
 					"description": "The schema to access."
+				},
+				"whereFields": {
+					"type": "array",
+					"required": false,
+					"description": 
+						`The where fields and their values to select from the database. A key/value object must be passed. Example: { "name": "Test_User" }`
 				},
 				"fields": {
 					"type": "array",
@@ -107,7 +197,16 @@ export class DataRoute extends HotRoute
 							"schema": "users"
 						});
 
-					driver.assert (resp.length > 0, "Unable to list items!");
+					if (driver.persistentData.hasRemoved != null)
+					{
+						if (driver.persistentData.hasRemoved === true)
+							driver.assert (resp.length === 0, "Not all items have been removed!");
+
+						return;
+					}
+
+					const name: string = resp[0].name;
+					driver.assert (name === "Test_User_Updated", "Unable to list items!");
 				}
 			]
 		});
@@ -128,7 +227,8 @@ export class DataRoute extends HotRoute
 			let field: string = key;
 			let value: any = fields[key];
 
-			insertQuery += `${field} = ?, `;
+			insertQuery += `?? = ?, `;
+			insertArray.push (key);
 			insertArray.push (value);
 		}
 
@@ -140,7 +240,56 @@ export class DataRoute extends HotRoute
 		if (result.error != null)
 			throw new Error (result.error);
 
-        return (true);
+		return (true);
+	}
+
+	/**
+	 * Edit some data.
+	 */
+	protected async edit (req: ServerRequest): Promise<any>
+	{
+		let schema: string = HotStaq.getParam ("schema", req.jsonObj);
+		let whereFields: any = HotStaq.getParam ("whereFields", req.jsonObj);
+		let fields: any = HotStaq.getParam ("fields", req.jsonObj);
+		let updateQuery: string = "";
+		let whereQuery: string = "";
+		let updateArray = [schema];
+
+		let addedUpdateArray: boolean = false;
+
+		for (let key in fields)
+		{
+			let value: any = fields[key];
+
+			updateQuery += `?? = ?, `;
+
+			updateArray.push (key);
+			updateArray.push (value);
+			addedUpdateArray = true;
+		}
+
+		if (addedUpdateArray === true)
+			updateQuery = updateQuery.substring (0, (updateQuery.length - 2));
+
+		for (let key in whereFields)
+		{
+			let value: any = whereFields[key];
+
+			whereQuery += `?? = ? AND `;
+			updateArray.push (key);
+			updateArray.push (value);
+		}
+
+		if (updateArray.length > 1)
+			whereQuery = whereQuery.substring (0, (whereQuery.length - 5));
+
+		let strtemp: string = this.db.db.format (`update ?? set ${updateQuery} where ${whereQuery};`, updateArray);
+		let result = await this.db.query (strtemp, updateArray);
+
+		if (result.error != null)
+			throw new Error (result.error);
+
+		return (true);
 	}
 
 	/**
@@ -149,20 +298,22 @@ export class DataRoute extends HotRoute
 	protected async list (req: ServerRequest): Promise<any>
 	{
 		let schema: string = HotStaq.getParam ("schema", req.jsonObj);
-		let fields: any = HotStaq.getParamDefault ("fields", req.jsonObj, {});
-		let offset: number = HotStaq.getParamDefault ("offset", req.jsonObj, 0);
+		let whereFields: any = HotStaq.getParamDefault ("whereFields", req.jsonObj, {});
+		let offset: number = HotStaq.getParamDefault ("offset", req.jsonObj, null);
 		let limit: number = HotStaq.getParamDefault ("limit", req.jsonObj, 20);
 
 		let queryStr: string = "select * from ??";
 		let values: any = [schema];
 
-		for (let key in fields)
-		{
-			let fieldElement = fields[key];
-			let value = fieldElement.value;
+		const whereFieldsCount: number = Object.keys (whereFields).length;
 
-			if (values.length === 1)
-				queryStr += " where ";
+		if (whereFieldsCount > 0)
+			queryStr += " where ";
+
+		for (let key in whereFields)
+		{
+			let fieldElement = whereFields[key];
+			let value = fieldElement.value;
 
 			queryStr += `?? = ? AND `;
 
@@ -173,11 +324,18 @@ export class DataRoute extends HotRoute
 		if (values.length > 1)
 			queryStr = queryStr.substring (0, (queryStr.length - 5));
 
-		values.push (offset);
-		values.push (limit);
+		if (offset != null)
+		{
+			queryStr += ` offset ? `;
+			values.push (offset);
+		}
 
-		let strtemp = this.db.db.format (queryStr, values);
-		this.logger.verbose (strtemp);
+		if (limit != null)
+		{
+			queryStr += ` limit ? `;
+			values.push (limit);
+		}
+
 		let result = await this.db.query (queryStr, values);
 
 		if (result.error != null)
@@ -186,6 +344,59 @@ export class DataRoute extends HotRoute
 		this.logger.verbose (JSON.stringify (result));
 		let results = result.results;
 
-        return (results);
+		return (results);
+	}
+
+	/**
+	 * Remove some data.
+	 */
+	protected async remove (req: ServerRequest): Promise<any>
+	{
+		let schema: string = HotStaq.getParam ("schema", req.jsonObj);
+		let whereFields: any = HotStaq.getParamDefault ("whereFields", req.jsonObj, {});
+		let offset: number = HotStaq.getParamDefault ("offset", req.jsonObj, null);
+		let limit: number = HotStaq.getParamDefault ("limit", req.jsonObj, 1);
+
+		let queryStr: string = "delete from ??";
+		let whereQuery: string = "";
+		let values: any = [schema];
+
+		const whereFieldsCount: number = Object.keys (whereFields).length;
+
+		for (let key in whereFields)
+		{
+			let value: any = whereFields[key];
+
+			whereQuery += `?? = ? AND `;
+
+			values.push (key);
+			values.push (value);
+		}
+
+		if (whereFieldsCount > 0)
+			queryStr += " where " + whereQuery.substring (0, (whereQuery.length - 5));
+
+		if (offset != null)
+		{
+			queryStr += ` offset ? `;
+			values.push (offset);
+		}
+
+		if (limit != null)
+		{
+			queryStr += ` limit ? `;
+			values.push (limit);
+		}
+
+		let strtemp: string = this.db.db.format (queryStr, values);
+		let result = await this.db.query (queryStr, values);
+
+		if (result.error != null)
+			throw result.error;
+
+		this.logger.verbose (JSON.stringify (result));
+		let results = result.results;
+
+		return (results);
 	}
 }

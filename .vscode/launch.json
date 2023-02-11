@@ -12,7 +12,7 @@
 			"args": [
 				"--dev",
 				"--env-file", ".env",
-				"--hotsite", "./HotSite.json",
+				"--hotsite", "./HotSite.yaml",
 				"run",
 				"--server-type", "api",
 				"--tester-test-timeout", "2000",

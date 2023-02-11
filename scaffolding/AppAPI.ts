@@ -1,6 +1,6 @@
 import { HotAPI, HotServer, HotClient, HotRoute, 
 	HotRouteMethod, MySQLSchema, 
-	ServerAuthorizationFunction, HotStaq, HotServerType } from "hotstaq";
+	ServerAuthorizationFunction, HotStaq, HotServerType, DeveloperMode, HotDBMySQL } from "hotstaq";
 import { DataRoute } from "../src/DataRoute";
 
 /**
@@ -28,6 +28,22 @@ export class AppAPI extends HotAPI
 				return (true);
 			};
 
-		this.addRoute (new DataRoute (this));
+		this.addRoute (new DataRoute (this, async (db: HotDBMySQL) =>
+			{
+				if (this.connection.processor.mode === DeveloperMode.Development)
+				{
+					await db.query (
+						`create table if not exists users (
+							id             INT(10)        NOT NULL AUTO_INCREMENT,
+							name           VARCHAR(256)   DEFAULT '',
+							email          VARCHAR(256)   DEFAULT '',
+							password       VARCHAR(256)   DEFAULT '',
+							verified       INT(1)         DEFAULT '0',
+							registered     DATETIME       DEFAULT NOW(),
+							enabled        INT(1)         DEFAULT '1',
+							PRIMARY KEY (id)
+						)`);
+				}
+			}));
 	}
 }
