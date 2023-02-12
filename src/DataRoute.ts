@@ -129,11 +129,6 @@ export class DataRoute extends HotRoute
 					"required": true,
 					"description": 
 						`The where fields and their values to select from the database. A key/value object must be passed. Example: { "name": "Test_User" }`
-				},
-				"limit": {
-					"type": "int",
-					"required": false,
-					"description": "The max number of results to delete."
 				}
 			},
 			"description": "Remove results from the database.",
@@ -354,8 +349,6 @@ export class DataRoute extends HotRoute
 	{
 		let schema: string = HotStaq.getParam ("schema", req.jsonObj);
 		let whereFields: any = HotStaq.getParamDefault ("whereFields", req.jsonObj, {});
-		let offset: number = HotStaq.getParamDefault ("offset", req.jsonObj, null);
-		let limit: number = HotStaq.getParamDefault ("limit", req.jsonObj, 1);
 
 		let queryStr: string = "delete from ??";
 		let whereQuery: string = "";
@@ -375,18 +368,6 @@ export class DataRoute extends HotRoute
 
 		if (whereFieldsCount > 0)
 			queryStr += " where " + whereQuery.substring (0, (whereQuery.length - 5));
-
-		if (offset != null)
-		{
-			queryStr += ` offset ? `;
-			values.push (offset);
-		}
-
-		if (limit != null)
-		{
-			queryStr += ` limit ? `;
-			values.push (limit);
-		}
 
 		let strtemp: string = this.db.db.format (queryStr, values);
 		let result = await this.db.query (queryStr, values);

@@ -1,7 +1,7 @@
 {
   "name": "@hotstaq/dataroute",
   "description": "A generic data route for HotStaq. Mostly handles database queries.",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "main": "build/src/index.js",
   "scripts": {
     "test": "hotstaq --dev --env-file .env run --server-type api --api-test",
