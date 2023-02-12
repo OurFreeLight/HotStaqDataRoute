@@ -1,13 +1,14 @@
 {
   "name": "@hotstaq/dataroute",
   "description": "A generic data route for HotStaq. Mostly handles database queries.",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "main": "build/src/index.js",
   "scripts": {
     "test": "hotstaq --dev --env-file .env run --server-type api --api-test",
     "build": "tsc --build ./tsconfig.json",
     "build-web": "hotstaq generate",
-    "build-doc": "hotstaq generate --generate-type openapi-3.0.0-yaml"
+    "build-doc": "hotstaq generate --generate-type openapi-3.0.0-yaml",
+    "prepublishOnly": "npm run build && npm run build-web"
   },
   "keywords": [],
   "author": "FreeLight, Inc",

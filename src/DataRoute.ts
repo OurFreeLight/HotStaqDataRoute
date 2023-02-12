@@ -10,6 +10,31 @@ export class DataRoute extends HotRoute
 	 * The database connection.
 	 */
 	db: HotDBMySQL;
+	/**
+	 * When inserting a new field, change any values. Returning 
+	 * undefined will not insert the field.
+	 */
+	onInsertField: (schema: string, key: string, value: any) => any;
+	/**
+	 * When updating a new field, change any values. Returning 
+	 * undefined will not insert the field.
+	 */
+	onUpdateField: (schema: string, key: string, value: any) => any;
+	/**
+	 * When updating a new field with a where field, change any values. Returning 
+	 * undefined will not insert the field.
+	 */
+	onUpdateWhereField: (schema: string, key: string, value: any) => any;
+	/**
+	 * When removing a field, change any values. Returning 
+	 * undefined will not insert the field.
+	 */
+	onRemoveWhereField: (schema: string, key: string, value: any) => any;
+	/**
+	 * When listing a field, change any values. Returning 
+	 * undefined will not insert the field.
+	 */
+	onListWhereField: (schema: string, key: string, value: any) => any;
 
 	/**
 	 * @param api The API to attach this route to.
@@ -19,6 +44,12 @@ export class DataRoute extends HotRoute
 	constructor (api: HotAPI, onRegisteringRoute: ((db: HotDBMySQL) => Promise<void>) = null)
 	{
 		super (api.connection, "data");
+
+		this.onInsertField = null;
+		this.onUpdateField = null;
+		this.onUpdateWhereField = null;
+		this.onRemoveWhereField = null;
+		this.onListWhereField = null;
 
 		this.onRegister = async () =>
 			{
@@ -219,8 +250,15 @@ export class DataRoute extends HotRoute
 
 		for (let key in fields)
 		{
-			let field: string = key;
 			let value: any = fields[key];
+
+			if (this.onInsertField != null)
+			{
+				value = await this.onInsertField (schema, key, value);
+
+				if (value === undefined)
+					continue;
+			}
 
 			insertQuery += `?? = ?, `;
 			insertArray.push (key);
@@ -256,6 +294,14 @@ export class DataRoute extends HotRoute
 		{
 			let value: any = fields[key];
 
+			if (this.onUpdateField != null)
+			{
+				value = await this.onUpdateField (schema, key, value);
+
+				if (value === undefined)
+					continue;
+			}
+
 			updateQuery += `?? = ?, `;
 
 			updateArray.push (key);
@@ -269,6 +315,14 @@ export class DataRoute extends HotRoute
 		for (let key in whereFields)
 		{
 			let value: any = whereFields[key];
+
+			if (this.onUpdateWhereField != null)
+			{
+				value = await this.onUpdateWhereField (schema, key, value);
+
+				if (value === undefined)
+					continue;
+			}
 
 			whereQuery += `?? = ? AND `;
 			updateArray.push (key);
@@ -309,6 +363,14 @@ export class DataRoute extends HotRoute
 		{
 			let fieldElement = whereFields[key];
 			let value = fieldElement.value;
+
+			if (this.onListWhereField != null)
+			{
+				value = await this.onListWhereField (schema, key, value);
+
+				if (value === undefined)
+					continue;
+			}
 
 			queryStr += `?? = ? AND `;
 
@@ -359,6 +421,14 @@ export class DataRoute extends HotRoute
 		for (let key in whereFields)
 		{
 			let value: any = whereFields[key];
+
+			if (this.onRemoveWhereField != null)
+			{
+				value = await this.onRemoveWhereField (schema, key, value);
+
+				if (value === undefined)
+					continue;
+			}
 
 			whereQuery += `?? = ? AND `;
 
