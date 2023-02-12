@@ -27,14 +27,18 @@ export class DataRoute extends HotRoute
 	onUpdateWhereField: (schema: string, key: string, value: any) => any;
 	/**
 	 * When removing a field, change any values. Returning 
-	 * undefined will not insert the field.
+	 * undefined will not include the field.
 	 */
 	onRemoveWhereField: (schema: string, key: string, value: any) => any;
 	/**
 	 * When listing a field, change any values. Returning 
-	 * undefined will not insert the field.
+	 * undefined will not list the field.
 	 */
 	onListWhereField: (schema: string, key: string, value: any) => any;
+	/**
+	 * When listing the results, change any values.
+	 */
+	onListFilterResults: (results: any) => any;
 
 	/**
 	 * @param api The API to attach this route to.
@@ -50,6 +54,25 @@ export class DataRoute extends HotRoute
 		this.onUpdateWhereField = null;
 		this.onRemoveWhereField = null;
 		this.onListWhereField = null;
+		this.onListFilterResults = (results: any): any =>
+			{
+				for (let key in results)
+				{
+					const tempKey: string = key.toLowerCase ();
+
+					if ((tempKey === "password") || (tempKey === "passwordSalt") ||
+						(tempKey === "password_hash") || (tempKey === "password_salt") ||
+						(tempKey === "passwordhash") || (tempKey === "passwordsalt") ||
+						(tempKey === "apikey") || (tempKey === "api_key") ||
+						(tempKey === "privatekey") || (tempKey === "private_key") ||
+						(tempKey === "secretkey") || (tempKey === "secret_key"))
+					{
+						delete results[key];
+					}
+				}
+
+				return (results);
+			};
 
 		this.onRegister = async () =>
 			{
@@ -251,6 +274,8 @@ export class DataRoute extends HotRoute
 		for (let key in fields)
 		{
 			let value: any = fields[key];
+			let beginStr: string = "";
+			let endStr: string = "";
 
 			if (this.onInsertField != null)
 			{
@@ -258,9 +283,21 @@ export class DataRoute extends HotRoute
 
 				if (value === undefined)
 					continue;
+
+				if (value != null)
+				{
+					if (value.beginStr != null)
+						beginStr = value.beginStr;
+
+					if (value.endStr != null)
+						endStr = value.endStr;
+
+					if (value.value != null)
+						value = value.value;
+				}
 			}
 
-			insertQuery += `?? = ?, `;
+			insertQuery += `?? = ${beginStr}?${endStr}, `;
 			insertArray.push (key);
 			insertArray.push (value);
 		}
@@ -293,6 +330,8 @@ export class DataRoute extends HotRoute
 		for (let key in fields)
 		{
 			let value: any = fields[key];
+			let beginStr: string = "";
+			let endStr: string = "";
 
 			if (this.onUpdateField != null)
 			{
@@ -300,9 +339,21 @@ export class DataRoute extends HotRoute
 
 				if (value === undefined)
 					continue;
+
+				if (value != null)
+				{
+					if (value.beginStr != null)
+						beginStr = value.beginStr;
+
+					if (value.endStr != null)
+						endStr = value.endStr;
+
+					if (value.value != null)
+						value = value.value;
+				}
 			}
 
-			updateQuery += `?? = ?, `;
+			updateQuery += `?? = ${beginStr}?${endStr}, `;
 
 			updateArray.push (key);
 			updateArray.push (value);
@@ -315,6 +366,8 @@ export class DataRoute extends HotRoute
 		for (let key in whereFields)
 		{
 			let value: any = whereFields[key];
+			let beginStr: string = "";
+			let endStr: string = "";
 
 			if (this.onUpdateWhereField != null)
 			{
@@ -322,9 +375,21 @@ export class DataRoute extends HotRoute
 
 				if (value === undefined)
 					continue;
+
+				if (value != null)
+				{
+					if (value.beginStr != null)
+						beginStr = value.beginStr;
+
+					if (value.endStr != null)
+						endStr = value.endStr;
+
+					if (value.value != null)
+						value = value.value;
+				}
 			}
 
-			whereQuery += `?? = ? AND `;
+			whereQuery += `?? = ${beginStr}?${endStr} AND `;
 			updateArray.push (key);
 			updateArray.push (value);
 		}
@@ -363,6 +428,8 @@ export class DataRoute extends HotRoute
 		{
 			let fieldElement = whereFields[key];
 			let value = fieldElement.value;
+			let beginStr: string = "";
+			let endStr: string = "";
 
 			if (this.onListWhereField != null)
 			{
@@ -370,9 +437,21 @@ export class DataRoute extends HotRoute
 
 				if (value === undefined)
 					continue;
+
+				if (value != null)
+				{
+					if (value.beginStr != null)
+						beginStr = value.beginStr;
+
+					if (value.endStr != null)
+						endStr = value.endStr;
+
+					if (value.value != null)
+						value = value.value;
+				}
 			}
 
-			queryStr += `?? = ? AND `;
+			queryStr += `?? = ${beginStr}?${endStr} AND `;
 
 			values.push (key);
 			values.push (value);
@@ -401,6 +480,8 @@ export class DataRoute extends HotRoute
 		this.logger.verbose (JSON.stringify (result));
 		let results = result.results;
 
+		results = this.onListFilterResults (results);
+
 		return (results);
 	}
 
@@ -421,6 +502,8 @@ export class DataRoute extends HotRoute
 		for (let key in whereFields)
 		{
 			let value: any = whereFields[key];
+			let beginStr: string = "";
+			let endStr: string = "";
 
 			if (this.onRemoveWhereField != null)
 			{
@@ -428,9 +511,21 @@ export class DataRoute extends HotRoute
 
 				if (value === undefined)
 					continue;
+
+				if (value != null)
+				{
+					if (value.beginStr != null)
+						beginStr = value.beginStr;
+
+					if (value.endStr != null)
+						endStr = value.endStr;
+
+					if (value.value != null)
+						value = value.value;
+				}
 			}
 
-			whereQuery += `?? = ? AND `;
+			whereQuery += `?? = ${beginStr}?${endStr} AND `;
 
 			values.push (key);
 			values.push (value);
