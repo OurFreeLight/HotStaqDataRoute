@@ -38,7 +38,7 @@ export class DataRoute extends HotRoute
 	/**
 	 * When listing the results, change any values.
 	 */
-	onListFilterResults: (results: any) => any;
+	onListFilterResults: (schema: string, results: any) => Promise<any>;
 
 	/**
 	 * @param api The API to attach this route to.
@@ -54,7 +54,7 @@ export class DataRoute extends HotRoute
 		this.onUpdateWhereField = null;
 		this.onRemoveWhereField = null;
 		this.onListWhereField = null;
-		this.onListFilterResults = (results: any): any =>
+		this.onListFilterResults = async (schema: string, results: any): Promise<any> =>
 			{
 				for (let key in results)
 				{
@@ -427,7 +427,7 @@ export class DataRoute extends HotRoute
 		for (let key in whereFields)
 		{
 			let fieldElement = whereFields[key];
-			let value = fieldElement.value;
+			let value = fieldElement;
 			let beginStr: string = "";
 			let endStr: string = "";
 
@@ -480,7 +480,7 @@ export class DataRoute extends HotRoute
 		this.logger.verbose (JSON.stringify (result));
 		let results = result.results;
 
-		results = this.onListFilterResults (results);
+		results = await this.onListFilterResults (schema, results);
 
 		return (results);
 	}
